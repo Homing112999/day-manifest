@@ -1,0 +1,733 @@
+<!doctype html><html><head><meta charset="utf-8"><title>今日行程</title><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="行程表"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#000000"><link rel="icon" href="icons/favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="manifest" href="manifest.json"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap"><style id="app-style">
+  :root {
+    --bg: #000000;
+    --surface: #0B0C0E;
+    --surface-raised: #101216;
+    --bevel: rgba(255, 255, 255, 0.055);
+    --line: #1B1E23;
+    --line-soft: #131519;
+
+    --ink: #F2F4F7;
+    --ink-soft: #868C95;
+    --ink-faint: #4C525B;
+
+    --steel: #C9D1DA;
+    --steel-dim: rgba(201, 209, 218, 0.10);
+    --brass: #B08D57;
+    --brass-dim: rgba(176, 141, 87, 0.13);
+
+    --brush: linear-gradient(148deg, #EDF1F5 0%, #A8B1BB 38%, #4F555D 52%, #B9C2CC 78%, #7A828B 100%);
+    --plate: linear-gradient(180deg, #15181C 0%, #0A0B0D 100%);
+
+    --font-cjk: "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+    --font-ui: "Archivo", "Noto Sans TC", "PingFang HK", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-cjk);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 440px;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  @media (min-width: 640px) {
+    body {
+      padding: 56px 20px;
+      align-items: center;
+      background: radial-gradient(120% 80% at 50% 0%, #0A0B0D 0%, #000000 62%);
+    }
+    .app {
+      min-height: min(780px, calc(100vh - 112px));
+      max-height: 860px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      box-shadow:
+        inset 0 1px 0 var(--bevel),
+        0 0 0 1px #000,
+        0 48px 100px -36px #000;
+      overflow: hidden;
+    }
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: max(24px, env(safe-area-inset-top)) 22px 16px;
+    flex: none;
+  }
+
+  .mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 4px;
+    background: var(--brush);
+    color: #0A0B0D;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    flex: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+      0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+
+  .titles { flex: 1; min-width: 0; }
+
+  .app-title {
+    font-family: var(--font-cjk);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+
+  .app-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .today-btn {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: var(--plate);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 12px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 var(--bevel);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .today-btn:hover { color: #fff; border-color: #2B3039; }
+  .today-btn:focus-visible { outline: 1px solid var(--steel); outline-offset: 2px; }
+
+  .sync-note {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    padding: 0 22px 10px;
+  }
+
+  .rail {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 2px 22px 18px;
+    flex: none;
+    scrollbar-width: none;
+  }
+
+  .rail::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex: none;
+    width: 44px;
+    padding: 9px 0 8px;
+    border-radius: 3px;
+    border: 1px solid var(--line-soft);
+    background: var(--surface);
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .chip:hover { border-color: #262A31; }
+  .chip:focus-visible { outline: 1px solid var(--steel); outline-offset: 2px; }
+
+  .chip .wd {
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    font-family: var(--font-cjk);
+  }
+
+  .chip .num {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip .dot {
+    width: 14px;
+    height: 2px;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .chip.has-open .dot { background: var(--steel); }
+  .chip.has-all-done .dot { background: var(--brass); }
+
+  .chip.selected {
+    background: var(--brush);
+    border-color: #D3DAE2;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 18px -6px rgba(201, 209, 218, 0.5);
+  }
+
+  .chip.selected .num { color: #08090A; font-weight: 700; }
+  .chip.selected .wd { color: rgba(8, 9, 10, 0.62); }
+  .chip.selected .dot { background: rgba(8, 9, 10, 0.35); }
+  .chip.selected.has-all-done .dot { background: #6B5327; }
+
+  .panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 22px calc(30px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 var(--bevel);
+  }
+
+  .day-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0 10px;
+  }
+
+  .day-date {
+    font-family: var(--font-mono);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    background: var(--brush);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+  }
+
+  .day-meta { flex: 1; min-width: 0; }
+
+  .day-wd {
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+  }
+
+  .day-badge {
+    display: inline-block;
+    margin-top: 5px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #08090A;
+    background: var(--steel);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .ring-wrap {
+    flex: none;
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    transition: box-shadow 0.4s ease;
+  }
+  .ring-wrap.complete { box-shadow: 0 0 22px -4px rgba(176, 141, 87, 0.55); }
+  .ring-wrap svg { width: 46px; height: 46px; transform: rotate(-90deg); }
+  .ring-track { stroke: #1B1E23; }
+  .ring-fill { stroke: var(--brass); transition: stroke-dashoffset 0.4s ease; }
+  .ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .ring-label svg { width: 15px; height: 15px; }
+  .ring-label svg path { stroke: var(--brass); }
+
+  .celebrate-banner {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 16px 0 2px;
+    padding: 13px 14px;
+    border-radius: 3px;
+    background: var(--plate);
+    border: 1px solid #2A2318;
+    border-left: 2px solid var(--brass);
+    box-shadow: inset 0 1px 0 var(--bevel);
+    animation: banner-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.05) both;
+  }
+
+  .celebrate-banner .icon {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 2px;
+    background: var(--brass);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+
+  .celebrate-banner .icon svg { width: 12px; height: 12px; }
+  .celebrate-banner .icon svg path { stroke: #0A0B0D; }
+
+  .celebrate-banner .text {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+
+  .celebrate-banner .sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    margin-top: 2px;
+  }
+
+  @keyframes banner-in {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .empty-state {
+    margin-top: 20px;
+    padding: 30px 18px;
+    border: 1px solid var(--line-soft);
+    border-radius: 3px;
+    background: var(--surface);
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 13px;
+    line-height: 1.75;
+    letter-spacing: 0.04em;
+  }
+
+  ol.tasks { list-style: none; margin: 10px 0 0; padding: 0; }
+
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .task:last-child { border-bottom: none; }
+
+  .task-check {
+    flex: none;
+    width: 21px;
+    height: 21px;
+    margin-top: 2px;
+    border-radius: 2px;
+    border: 1px solid #343A43;
+    background: var(--plate);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: inset 0 1px 0 var(--bevel);
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .task-check:hover { border-color: #4C535D; }
+  .task-check:focus-visible { outline: 1px solid var(--steel); outline-offset: 2px; }
+
+  .task-check svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    transform: scale(0.55);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .task-check svg path { stroke: #08090A; }
+
+  .task.done .task-check {
+    background: var(--brass);
+    border-color: #C79E63;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  .task.done .task-check svg { opacity: 1; transform: scale(1); }
+
+  .task-body { flex: 1; padding-top: 1px; min-width: 0; }
+
+  .task-title {
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+
+  .task.done .task-title {
+    color: var(--ink-faint);
+    text-decoration: line-through;
+    text-decoration-color: rgba(176, 141, 87, 0.5);
+    text-decoration-thickness: 1px;
+  }
+
+  .task-meta {
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .task-meta .sep { color: var(--ink-faint); margin: 0 6px; }
+  .task-meta .cat {
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+  }
+  .task.done .task-meta { opacity: 0.55; }
+
+  .foot {
+    padding: 20px 0 6px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line-soft);
+    margin-top: 22px;
+  }
+</style></head><body><div class="app"><div class="topbar"><div class="mark">SCH</div><div class="titles"><div class="app-title">今日行程</div><div class="app-sub" id="rangeLine"></div></div><button class="today-btn" id="todayBtn" type="button">今日</button></div><div class="sync-note" id="sync-note"></div><nav class="rail" id="rail" aria-label="選擇日期"></nav><div class="panel" id="panel"></div></div><canvas id="confettiCanvas"></canvas><script type="application/json" id="tasks-data">{"2026-09-04": [{"id": "0v60cdou7d43plvph8fpuhack0_20260904T040000Z", "title": "JVM work", "time": "08:00–18:00", "tag": "JVM WORK"}, {"id": "fqn76lmhrg76ki362fcgj5mr5c", "title": "Cover", "time": "11:00–13:00", "tag": "IP SHOOT"}], "2026-09-05": [{"id": "e5c0q99kka44bmge18p4tn1lp0", "title": "辦理回鄉證", "time": "10:12–11:12", "tag": "PRIVATE"}, {"id": "impara1ecajp9lnappen9skf0k_20260905T040000Z", "title": "IP Shoot", "time": "12:00–16:00", "tag": "IP SHOOT"}, {"id": "m2o6ehn37d77vv0mgn3uq2t8r8_20260905T090000Z", "title": "Uber", "time": "17:00–00:00", "tag": "UBER"}], "2026-09-06": [{"id": "a8atl8qcj7qalq22o6bp4vp7lo_20260906T020000Z", "title": "Uber", "time": "10:00–18:00", "tag": "UBER"}, {"id": "t6tgve0qeiim34gq0d2jome2ds", "title": "帶 Loki 沖涼", "time": "18:00–20:00", "tag": "PRIVATE"}], "2026-09-07": [{"id": "evd2a1vrtrfnda5n26cdvk28ks_20260907T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "g1cipc7okklds6uo609h8dumvk", "title": "攞眼鏡", "time": "11:00–11:05", "tag": "PRIVATE"}, {"id": "dcqei080tr09bksiujgddp4cog_20260907T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "4a631jvlso0bofhq3696dv2i54_20260907T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-08": [{"id": "ap1vqtresbo6292punhkh80b4g_20260908T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "6v45f7l42vqvak9ql9fh425grk_20260908T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "1fpgb1ki77dsirmu6ovnccm7o0_20260908T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-09": [{"id": "16f4kbfrug427i3ac21vr8o69o_20260909T020000Z", "title": "GYM + 跑步", "time": "10:00–11:00", "tag": "GYM"}, {"id": "kcgspovcf36nid927v6dp8vhmg", "title": "Botox", "time": "11:00–11:30", "tag": "PRIVATE"}, {"id": "5mc8fuueljtnrniiignmr6khjg_20260909T040000Z", "title": "IP Shoot", "time": "12:00–18:00", "tag": "IP SHOOT"}, {"id": "eqvfsdv54560g2p65opomkr9ns", "title": "服裝品牌 Event", "time": "16:00–16:30", "tag": "CASTING"}, {"id": "nq3qddi316600mii50f3r3br5g_20260909T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-10": [{"id": "boqg4m81ke3g1c4ehsipkhu41s_20260910T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "kvp0s80i4vno9ikfdeui9jm1ig", "title": "同琪琪影相（Hold）", "time": "11:00–17:00", "tag": "PRIVATE"}, {"id": "kvc4mgojvttkm5i7s08gaoqhc0_20260910T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "ljihvd4eafb03guqjn29bqr5l8_20260910T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-11": [{"id": "bqp83mtggd7nn3v7ojd199t4lk_20260911T030000Z", "title": "GYM + 跑步", "time": "11:00–12:00", "tag": "GYM"}, {"id": "0v60cdou7d43plvph8fpuhack0_20260911T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "eg33j7ami51ave6ki09gc00irk_20260911T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}, {"id": "5vbs34mo9bqdf794uo40mf096c", "title": "銅鑼灣 Live Music", "time": "20:00–22:00", "tag": "MUSIC"}], "2026-09-12": [{"id": "impara1ecajp9lnappen9skf0k_20260912T040000Z", "title": "IP Shoot", "time": "12:00–16:00", "tag": "IP SHOOT"}, {"id": "es2gr8gql6l2tivtiun95ddm9g", "title": "Fion IP", "time": "15:00–18:00", "tag": "CASTING"}, {"id": "m2o6ehn37d77vv0mgn3uq2t8r8_20260912T090000Z", "title": "Uber", "time": "17:00–00:00", "tag": "UBER"}], "2026-09-13": [{"id": "a8atl8qcj7qalq22o6bp4vp7lo_20260913T020000Z", "title": "Uber", "time": "10:00–18:00", "tag": "UBER"}], "2026-09-14": [{"id": "evd2a1vrtrfnda5n26cdvk28ks_20260914T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "dcqei080tr09bksiujgddp4cog_20260914T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "4a631jvlso0bofhq3696dv2i54_20260914T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-15": [{"id": "ap1vqtresbo6292punhkh80b4g_20260915T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "6v45f7l42vqvak9ql9fh425grk_20260915T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "1fpgb1ki77dsirmu6ovnccm7o0_20260915T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-16": [{"id": "16f4kbfrug427i3ac21vr8o69o_20260916T020000Z", "title": "GYM + 跑步", "time": "10:00–11:00", "tag": "GYM"}, {"id": "5mc8fuueljtnrniiignmr6khjg_20260916T040000Z", "title": "IP Shoot", "time": "12:00–18:00", "tag": "IP SHOOT"}, {"id": "nq3qddi316600mii50f3r3br5g_20260916T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-17": [{"id": "boqg4m81ke3g1c4ehsipkhu41s_20260917T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "kvc4mgojvttkm5i7s08gaoqhc0_20260917T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "ljihvd4eafb03guqjn29bqr5l8_20260917T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-18": [{"id": "bqp83mtggd7nn3v7ojd199t4lk_20260918T030000Z", "title": "GYM + 跑步", "time": "11:00–12:00", "tag": "GYM"}, {"id": "0v60cdou7d43plvph8fpuhack0_20260918T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "eg33j7ami51ave6ki09gc00irk_20260918T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-19": [{"id": "impara1ecajp9lnappen9skf0k_20260919T040000Z", "title": "IP Shoot", "time": "12:00–16:00", "tag": "IP SHOOT"}, {"id": "m2o6ehn37d77vv0mgn3uq2t8r8_20260919T090000Z", "title": "Uber", "time": "17:00–00:00", "tag": "UBER"}], "2026-09-20": [{"id": "a8atl8qcj7qalq22o6bp4vp7lo_20260920T020000Z", "title": "Uber", "time": "10:00–18:00", "tag": "UBER"}], "2026-09-21": [{"id": "evd2a1vrtrfnda5n26cdvk28ks_20260921T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "dcqei080tr09bksiujgddp4cog_20260921T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "4a631jvlso0bofhq3696dv2i54_20260921T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-22": [{"id": "ap1vqtresbo6292punhkh80b4g_20260922T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "6v45f7l42vqvak9ql9fh425grk_20260922T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "1fpgb1ki77dsirmu6ovnccm7o0_20260922T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-23": [{"id": "16f4kbfrug427i3ac21vr8o69o_20260923T020000Z", "title": "GYM + 跑步", "time": "10:00–11:00", "tag": "GYM"}, {"id": "5mc8fuueljtnrniiignmr6khjg_20260923T040000Z", "title": "IP Shoot", "time": "12:00–18:00", "tag": "IP SHOOT"}, {"id": "nq3qddi316600mii50f3r3br5g_20260923T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-24": [{"id": "boqg4m81ke3g1c4ehsipkhu41s_20260924T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "kvc4mgojvttkm5i7s08gaoqhc0_20260924T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "ljihvd4eafb03guqjn29bqr5l8_20260924T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-25": [{"id": "bqp83mtggd7nn3v7ojd199t4lk_20260925T030000Z", "title": "GYM + 跑步", "time": "11:00–12:00", "tag": "GYM"}, {"id": "0v60cdou7d43plvph8fpuhack0_20260925T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "eg33j7ami51ave6ki09gc00irk_20260925T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-26": [{"id": "impara1ecajp9lnappen9skf0k_20260926T040000Z", "title": "IP Shoot", "time": "12:00–16:00", "tag": "IP SHOOT"}, {"id": "m2o6ehn37d77vv0mgn3uq2t8r8_20260926T090000Z", "title": "Uber", "time": "17:00–00:00", "tag": "UBER"}], "2026-09-27": [{"id": "a8atl8qcj7qalq22o6bp4vp7lo_20260927T020000Z", "title": "Uber", "time": "10:00–18:00", "tag": "UBER"}], "2026-09-28": [{"id": "evd2a1vrtrfnda5n26cdvk28ks_20260928T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "dcqei080tr09bksiujgddp4cog_20260928T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "4a631jvlso0bofhq3696dv2i54_20260928T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}], "2026-09-29": [{"id": "ap1vqtresbo6292punhkh80b4g_20260929T020000Z", "title": "GYM", "time": "10:00–11:00", "tag": "GYM"}, {"id": "6v45f7l42vqvak9ql9fh425grk_20260929T040000Z", "title": "JVM work", "time": "12:00–18:00", "tag": "JVM WORK"}, {"id": "1fpgb1ki77dsirmu6ovnccm7o0_20260929T100000Z", "title": "Uber", "time": "18:00–00:00", "tag": "UBER"}], "2026-09-30": [{"id": "16f4kbfrug427i3ac21vr8o69o_20260930T020000Z", "title": "GYM + 跑步", "time": "10:00–11:00", "tag": "GYM"}, {"id": "5mc8fuueljtnrniiignmr6khjg_20260930T040000Z", "title": "IP Shoot", "time": "12:00–18:00", "tag": "IP SHOOT"}, {"id": "nq3qddi316600mii50f3r3br5g_20260930T110000Z", "title": "Music", "time": "19:00–22:00", "tag": "MUSIC"}]}</script><script>
+(function () {
+  "use strict";
+
+  var TASKS_BY_DATE = JSON.parse(document.getElementById("tasks-data").textContent);
+  var STORE_KEY = "day-manifest-done-state";
+  var DONE_STATE = {};
+  try {
+    DONE_STATE = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+  } catch (e) {
+    DONE_STATE = {};
+  }
+
+  var START = "2026-09-04";
+  var END = "2026-10-04";
+  var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+  var checkSvg =
+    '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function toDate(key) {
+    var parts = key.split("-").map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  function toKey(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1).padStart(2, "0");
+    var d = String(date.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + d;
+  }
+  function dateRange(startKey, endKey) {
+    var out = [];
+    var cur = toDate(startKey);
+    var end = toDate(endKey);
+    while (cur <= end) {
+      out.push(toKey(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  }
+
+  var todayKey = toKey(new Date());
+  var dates = dateRange(START, END);
+  var selectedKey = dates.indexOf(todayKey) !== -1 ? todayKey : dates[0];
+
+  (function () {
+    var s = toDate(START), e = toDate(END);
+    document.getElementById("rangeLine").textContent =
+      (s.getMonth() + 1) + "." + String(s.getDate()).padStart(2, "0") + " — " +
+      (e.getMonth() + 1) + "." + String(e.getDate()).padStart(2, "0");
+  })();
+
+  document.getElementById("sync-note").textContent = "已安裝喺呢部裝置 · 記錄留喺呢部機";
+
+  function persist() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(DONE_STATE));
+    } catch (e) {
+      // storage unavailable (private mode, quota) — state stays in memory only
+    }
+  }
+
+  function isDayComplete(dateKey, state) {
+    var tasks = TASKS_BY_DATE[dateKey] || [];
+    if (!tasks.length) return false;
+    for (var i = 0; i < tasks.length; i++) {
+      if (!state[tasks[i].id]) return false;
+    }
+    return true;
+  }
+
+  function toggleTask(taskId, dateKey) {
+    var wasComplete = isDayComplete(dateKey, DONE_STATE);
+    DONE_STATE[taskId] = !DONE_STATE[taskId];
+    renderPanel();
+    renderRail();
+    if (!wasComplete && isDayComplete(dateKey, DONE_STATE)) celebrate();
+    persist();
+  }
+
+  function dayStatus(key) {
+    var tasks = TASKS_BY_DATE[key] || [];
+    if (!tasks.length) return "empty";
+    var done = 0;
+    for (var i = 0; i < tasks.length; i++) if (DONE_STATE[tasks[i].id]) done++;
+    if (done === tasks.length) return "all-done";
+    return "open";
+  }
+
+  var railEl = document.getElementById("rail");
+  var panelEl = document.getElementById("panel");
+
+  function renderRail() {
+    railEl.innerHTML = "";
+    dates.forEach(function (key) {
+      var d = toDate(key);
+      var status = dayStatus(key);
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className =
+        "chip" +
+        (key === selectedKey ? " selected" : "") +
+        (status === "open" ? " has-open" : "") +
+        (status === "all-done" ? " has-all-done" : "");
+      chip.id = "chip-" + key;
+      chip.setAttribute("aria-label", (d.getMonth() + 1) + "月" + d.getDate() + "日");
+      chip.innerHTML =
+        '<span class="wd">' + WEEKDAYS[d.getDay()] + "</span>" +
+        '<span class="num">' + d.getDate() + "</span>" +
+        '<span class="dot"></span>';
+      chip.addEventListener("click", function () {
+        selectDay(key, true);
+      });
+      railEl.appendChild(chip);
+    });
+  }
+
+  function renderPanel() {
+    var key = selectedKey;
+    var d = toDate(key);
+    var isToday = key === todayKey;
+    var tasks = TASKS_BY_DATE[key] || [];
+    var doneCount = 0;
+    for (var i = 0; i < tasks.length; i++) if (DONE_STATE[tasks[i].id]) doneCount++;
+
+    var isComplete = tasks.length > 0 && doneCount === tasks.length;
+
+    var ringHtml = "";
+    if (tasks.length) {
+      var r = 19, c = 2 * Math.PI * r;
+      var frac = doneCount / tasks.length;
+      var offset = c * (1 - frac);
+      var label = isComplete
+        ? '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : doneCount + "/" + tasks.length;
+      ringHtml =
+        '<div class="ring-wrap' + (isComplete ? " complete" : "") + '"><svg viewBox="0 0 46 46">' +
+        '<circle class="ring-track" cx="23" cy="23" r="' + r + '" fill="none" stroke-width="3"/>' +
+        '<circle class="ring-fill" cx="23" cy="23" r="' + r + '" fill="none" stroke-width="3" ' +
+        'stroke-linecap="butt" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '"/>' +
+        '</svg><span class="ring-label">' + label + "</span></div>";
+    }
+
+    var bannerHtml = "";
+    if (isComplete) {
+      bannerHtml =
+        '<div class="celebrate-banner">' +
+        '<span class="icon"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+        '<div><div class="text">今日行程全部完成</div>' +
+        '<div class="sub">' + tasks.length + " / " + tasks.length + " CLEARED</div></div>" +
+        "</div>";
+    }
+
+    var bodyHtml;
+    if (!tasks.length) {
+      bodyHtml = '<div class="empty-state">呢日冇安排行程<br>安心休息</div>';
+    } else {
+      bodyHtml =
+        '<ol class="tasks">' +
+        tasks
+          .map(function (task) {
+            var isDone = !!DONE_STATE[task.id];
+            return (
+              '<li class="task' + (isDone ? " done" : "") + '" data-id="' + task.id + '">' +
+              '<button class="task-check" type="button" aria-label="標記完成:' + task.title + '">' + checkSvg + "</button>" +
+              '<div class="task-body"><div class="task-title">' + task.title + "</div>" +
+              '<div class="task-meta">' + task.time + '<span class="sep">·</span><span class="cat">' + task.tag + "</span></div>" +
+              "</div></li>"
+            );
+          })
+          .join("") +
+        "</ol>";
+    }
+
+    panelEl.innerHTML =
+      '<div class="day-head">' +
+      '<span class="day-date">' + (d.getMonth() + 1) + "." + String(d.getDate()).padStart(2, "0") + "</span>" +
+      '<div class="day-meta"><span class="day-wd">星期' + WEEKDAYS[d.getDay()] + "</span>" +
+      (isToday ? '<div class="day-badge">Today</div>' : "") +
+      "</div>" + ringHtml +
+      "</div>" + bannerHtml + bodyHtml +
+      '<div class="foot">' + dates.length + " days · " + Object.keys(TASKS_BY_DATE).reduce(function (n, k) { return n + TASKS_BY_DATE[k].length; }, 0) + " events</div>";
+
+    panelEl.querySelectorAll(".task-check").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var li = btn.closest(".task");
+        toggleTask(li.dataset.id, key);
+      });
+    });
+  }
+
+  function celebrate() {
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    var canvas = document.getElementById("confettiCanvas");
+    var dpr = window.devicePixelRatio || 1;
+    var w = window.innerWidth, h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    var colors = ["#B08D57", "#C9D1DA", "#8A9099", "#E6EBF0"];
+    var originX = w / 2;
+    var originY = h * 0.32;
+    var particles = Array.from({ length: 46 }, function () {
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 2.5 + Math.random() * 4.5;
+      return {
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        size: 2 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.3,
+        life: 1
+      };
+    });
+
+    var start = performance.now();
+    var duration = 1400;
+
+    function frame(now) {
+      var t = now - start;
+      ctx.clearRect(0, 0, w, h);
+      particles.forEach(function (p) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12;
+        p.rot += p.vr;
+        p.life = Math.max(0, 1 - t / duration);
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
+        ctx.restore();
+      });
+      if (t < duration) {
+        requestAnimationFrame(frame);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function selectDay(key, scrollChip) {
+    selectedKey = key;
+    renderRail();
+    renderPanel();
+    if (scrollChip) {
+      var chip = document.getElementById("chip-" + key);
+      if (chip) chip.scrollIntoView({ inline: "center", block: "nearest" });
+    }
+  }
+
+  document.getElementById("todayBtn").addEventListener("click", function () {
+    if (dates.indexOf(todayKey) !== -1) selectDay(todayKey, true);
+  });
+
+  renderRail();
+  renderPanel();
+  var initialChip = document.getElementById("chip-" + selectedKey);
+  if (initialChip) initialChip.scrollIntoView({ inline: "center", block: "nearest" });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+})();
+</script></body></html>
