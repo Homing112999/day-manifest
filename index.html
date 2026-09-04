@@ -472,6 +472,51 @@
   var checkSvg =
     '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.5 12L13 4.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+  // ---- goofy sound effects (Web Audio, no files needed) ----
+  var audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        return null;
+      }
+    }
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(function () {});
+    return audioCtx;
+  }
+  function blip(freqFrom, freqTo, dur, type, startAt, vol) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || "square";
+    var t = ctx.currentTime + (startAt || 0);
+    osc.frequency.setValueAtTime(freqFrom, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(freqTo, 1), t + dur);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(vol || 0.16, t + Math.min(0.02, dur * 0.3));
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+  function playBoop(checked) {
+    if (checked) {
+      blip(320, 900, 0.09, "square", 0, 0.14);
+      blip(600, 1400, 0.09, "square", 0.06, 0.1);
+    } else {
+      blip(500, 160, 0.12, "sawtooth", 0, 0.12);
+    }
+  }
+  function playFanfare() {
+    var notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    for (var i = 0; i < notes.length; i++) {
+      blip(notes[i] * 0.9, notes[i], 0.16, "square", i * 0.08, 0.15);
+    }
+    blip(1200, 2200, 0.35, "triangle", notes.length * 0.08, 0.08);
+  }
+
   function toDate(key) {
     var parts = key.split("-").map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2]);
@@ -526,6 +571,7 @@
   function toggleTask(taskId, dateKey) {
     var wasComplete = isDayComplete(dateKey, DONE_STATE);
     DONE_STATE[taskId] = !DONE_STATE[taskId];
+    playBoop(!!DONE_STATE[taskId]);
     renderPanel();
     renderRail();
     if (!wasComplete && isDayComplete(dateKey, DONE_STATE)) celebrate();
@@ -644,6 +690,7 @@
   }
 
   function celebrate() {
+    playFanfare();
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) return;
 
