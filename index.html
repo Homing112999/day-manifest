@@ -501,43 +501,55 @@
     osc.start(t);
     osc.stop(t + dur + 0.02);
   }
-  function honk() {
+  function noiseBurst(dur, startAt, filterFrom, filterTo, vol) {
     var ctx = getAudioCtx();
     if (!ctx) return;
-    var osc = ctx.createOscillator();
-    var lfo = ctx.createOscillator();
-    var lfoGain = ctx.createGain();
+    var t = ctx.currentTime + (startAt || 0);
+    var size = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    var buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < size; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / size);
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buffer;
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(filterFrom || 4000, t);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(filterTo || 200, 20), t + dur);
     var gain = ctx.createGain();
-    osc.type = "sawtooth";
-    var t = ctx.currentTime;
-    osc.frequency.setValueAtTime(220, t);
-    lfo.frequency.setValueAtTime(28, t);
-    lfoGain.gain.setValueAtTime(18, t);
-    lfo.connect(lfoGain).connect(osc.frequency);
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.linearRampToValueAtTime(0.16, t + 0.02);
-    gain.gain.setValueAtTime(0.16, t + 0.14);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-    osc.connect(gain).connect(ctx.destination);
-    lfo.start(t);
-    osc.start(t);
-    osc.stop(t + 0.24);
-    lfo.stop(t + 0.24);
+    gain.gain.setValueAtTime(vol || 0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+  function gunshot() {
+    blip(1800, 200, 0.05, "square", 0, 0.2);
+    noiseBurst(0.18, 0.005, 5000, 150, 0.32);
   }
   function playBoop(checked) {
     if (checked) {
-      // silly clown-horn honk
-      honk();
+      // cartoon "pow!" gunshot
+      gunshot();
     } else {
       blip(500, 160, 0.12, "sawtooth", 0, 0.12);
     }
   }
   function playFanfare() {
+    // big explosive boom + sub thump
+    noiseBurst(0.5, 0, 3000, 80, 0.4);
+    blip(90, 40, 0.4, "sine", 0, 0.3);
+    // firework crackle
+    for (var k = 0; k < 4; k++) {
+      noiseBurst(0.12, 0.15 + k * 0.09, 6000, 1000, 0.15);
+    }
+    // triumphant arpeggio riding on top
     var notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
     for (var i = 0; i < notes.length; i++) {
-      blip(notes[i] * 0.9, notes[i], 0.16, "square", i * 0.08, 0.15);
+      blip(notes[i] * 0.9, notes[i], 0.16, "square", 0.15 + i * 0.08, 0.15);
     }
-    blip(1200, 2200, 0.35, "triangle", notes.length * 0.08, 0.08);
+    blip(1200, 2200, 0.35, "triangle", 0.15 + notes.length * 0.08, 0.08);
   }
 
   function toDate(key) {
