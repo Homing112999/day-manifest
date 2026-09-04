@@ -503,8 +503,9 @@
   }
   function playBoop(checked) {
     if (checked) {
-      blip(320, 900, 0.09, "square", 0, 0.14);
-      blip(600, 1400, 0.09, "square", 0.06, 0.1);
+      // classic 8-bit "coin" chime: two bright square-wave notes, B5 -> E6
+      blip(987.77, 987.77, 0.045, "square", 0, 0.18);
+      blip(1318.51, 1318.51, 0.32, "square", 0.05, 0.16);
     } else {
       blip(500, 160, 0.12, "sawtooth", 0, 0.12);
     }
