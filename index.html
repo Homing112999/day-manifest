@@ -939,18 +939,26 @@
   function gfetch(url) {
     return fetch(url, { headers: { Authorization: "Bearer " + accessToken } })
       .then(function (res) {
-        if (res.status === 401) {
-          accessToken = null;
-          var err = new Error("unauthorized");
-          err.code = 401;
+        if (res.ok) return res.json();
+        // Read Google's error body so the UI can name the real cause.
+        return res.text().then(function (body) {
+          var reason = "", message = "";
+          try {
+            var parsed = JSON.parse(body);
+            var e = parsed && parsed.error;
+            if (e) {
+              message = e.message || "";
+              if (e.errors && e.errors[0]) reason = e.errors[0].reason || "";
+              if (!reason && e.status) reason = e.status;
+            }
+          } catch (parseErr) {}
+          if (res.status === 401) accessToken = null;
+          var err = new Error(message || ("http " + res.status));
+          err.code = res.status;
+          err.reason = reason;
+          err.detail = message;
           throw err;
-        }
-        if (!res.ok) {
-          var e2 = new Error("http " + res.status);
-          e2.code = res.status;
-          throw e2;
-        }
-        return res.json();
+        });
       });
   }
 
@@ -1024,11 +1032,29 @@
   }
 
   function handleAuthLoss(err) {
-    if (err && err.code === 401) {
+    var code = err && err.code;
+    var reason = (err && err.reason) || "";
+    var detail = (err && err.detail) || "";
+
+    if (code === 401) {          // token expired — try a quiet refresh
       requestToken(true);
       return;
     }
-    setStatus("暫時連唔到日曆 · 顯示緊上次資料", "warn");
+
+    if (reason === "accessNotConfigured" || detail.indexOf("has not been used in project") !== -1) {
+      showConnect("再試");
+      setStatus("Google Calendar API 未啟用 · 去 Cloud Console 啟用佢", "warn");
+      return;
+    }
+
+    if (reason === "insufficientPermissions" || reason === "forbidden" || code === 403) {
+      showConnect("重新授權");
+      setStatus("權限不足 · 重新授權時要剔埋日曆權限（" + (reason || code) + "）", "warn");
+      return;
+    }
+
+    showConnect("再試");
+    setStatus("讀日曆出錯 " + (code || "") + " " + (reason || detail || ""), "warn");
   }
 
   function requestToken(silent) {
