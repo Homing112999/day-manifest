@@ -1032,15 +1032,22 @@
     });
   }
 
-  // One-off: mark everything up to 2026-09-14 as done. Runs once per device,
+  // One-off: mark everything before 2026-09-14 as done. Runs once per device,
   // after a real sync, so later manual unticks are never overwritten.
-  var AUTOTICK_KEY = "day-manifest-autotick-2026-09-14";
+  var AUTOTICK_KEY = "day-manifest-autotick-before-2026-09-14";
+  var OLD_AUTOTICK_KEY = "day-manifest-autotick-2026-09-14";
   function autoTickOnce() {
     if (lsGet(AUTOTICK_KEY) === "1") return;
     var cutoff = "2026-09-14";
+    // An earlier build also ticked the 14th itself; undo that part.
+    var undoCutoffDay = lsGet(OLD_AUTOTICK_KEY) === "1";
     Object.keys(TASKS_BY_DATE).forEach(function (k) {
-      if (k > cutoff) return;
-      (TASKS_BY_DATE[k] || []).forEach(function (t) { if (t && t.id) DONE_STATE[t.id] = true; });
+      var items = TASKS_BY_DATE[k] || [];
+      if (k < cutoff) {
+        items.forEach(function (t) { if (t && t.id) DONE_STATE[t.id] = true; });
+      } else if (k === cutoff && undoCutoffDay) {
+        items.forEach(function (t) { if (t && t.id) delete DONE_STATE[t.id]; });
+      }
     });
     persist();
     lsSet(AUTOTICK_KEY, "1");
