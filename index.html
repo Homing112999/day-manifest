@@ -534,7 +534,9 @@
       String(date.getDate()).padStart(2, "0");
   }
   // Rolling window, recomputed on every load — the app never ages out.
-  var START = keyOf(shiftDays(new Date(), -3));
+  var PAST_DAYS = 60;      // history pulled fresh from Google each sync
+  var ARCHIVE_DAYS = 365;  // older days kept locally so nothing silently vanishes
+  var START = keyOf(shiftDays(new Date(), -PAST_DAYS));
   var END = keyOf(shiftDays(new Date(), 30));
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
   var checkSvg =
@@ -918,6 +920,24 @@
   }
 
   // Paint whatever was fetched last time, so a cold start is not empty.
+  // The date rail spans from the earliest day we hold (archive included) to END.
+  function rebuildDates() {
+    var keys = Object.keys(TASKS_BY_DATE).sort();
+    var first = START;
+    if (keys.length && keys[0] < first) first = keys[0];
+    dates = dateRange(first, END);
+    var rangeEl = document.getElementById("rangeLine");
+    if (rangeEl) {
+      var a = toDate(first), b = toDate(END);
+      rangeEl.textContent =
+        (a.getMonth() + 1) + "." + String(a.getDate()).padStart(2, "0") + " — " +
+        (b.getMonth() + 1) + "." + String(b.getDate()).padStart(2, "0");
+    }
+    if (dates.indexOf(selectedKey) === -1) {
+      selectedKey = dates.indexOf(todayKey) !== -1 ? todayKey : dates[dates.length - 1];
+    }
+  }
+
   (function primeFromCache() {
     var raw = lsGet(CACHE_KEY);
     if (!raw) return;
@@ -926,6 +946,7 @@
       if (cached && cached.byDate && Object.keys(cached.byDate).length) {
         TASKS_BY_DATE = cached.byDate;
         cachedAt = cached.at || 0;
+        rebuildDates();
         renderRail();
         renderPanel();
         setStatus(cachedAt ? "資料截至 " + hhmm(new Date(cachedAt)) : "顯示緊上次同步嘅資料");
@@ -990,14 +1011,22 @@
       var timeMin = new Date(START + "T00:00:00+08:00").toISOString();
       var timeMax = new Date(END + "T23:59:59+08:00").toISOString();
       return Promise.all(cals.map(function (cal) {
-        var url = "https://www.googleapis.com/calendar/v3/calendars/" +
+        var base = "https://www.googleapis.com/calendar/v3/calendars/" +
           encodeURIComponent(cal.id) + "/events" +
           "?singleEvents=true&orderBy=startTime&maxResults=250" +
           "&timeZone=Asia/Hong_Kong" +
           "&timeMin=" + encodeURIComponent(timeMin) +
           "&timeMax=" + encodeURIComponent(timeMax);
-        return gfetch(url)
-          .then(function (res) { return { name: cal.summary, events: (res && res.items) || [] }; })
+        var all = [];
+        function page(token, guard) {
+          var url = base + (token ? "&pageToken=" + encodeURIComponent(token) : "");
+          return gfetch(url).then(function (res) {
+            all = all.concat((res && res.items) || []);
+            if (res && res.nextPageToken && guard < 20) return page(res.nextPageToken, guard + 1);
+            return { name: cal.summary, events: all };
+          });
+        }
+        return page(null, 0)
           .catch(function () { return { name: cal.summary, events: [], failed: true }; });
       })).then(merge);
     });
@@ -1027,11 +1056,24 @@
       byDate[k].sort(function (a, b) { return a.at < b.at ? -1 : a.at > b.at ? 1 : 0; });
     });
 
+    // Fresh data is authoritative for [START, END]; days before START are
+    // kept from the local archive so last week's rows never disappear.
+    var previous = {};
+    try { previous = (JSON.parse(lsGet(CACHE_KEY) || "null") || {}).byDate || {}; } catch (e) { previous = {}; }
+    var oldest = keyOf(shiftDays(new Date(), -ARCHIVE_DAYS));
+    Object.keys(previous).forEach(function (k) {
+      if (k < START && k >= oldest && !byDate[k]) byDate[k] = previous[k];
+    });
+
     TASKS_BY_DATE = byDate;
-    lsSet(CACHE_KEY, JSON.stringify({ byDate: byDate, at: Date.now() }));
+    cachedAt = Date.now();
+    lsSet(CACHE_KEY, JSON.stringify({ byDate: byDate, at: cachedAt }));
     lsSet(LINK_KEY, "1");
+    rebuildDates();
     renderRail();
     renderPanel();
+    var chip = document.getElementById("chip-" + selectedKey);
+    if (chip) chip.scrollIntoView({ inline: "center", block: "nearest" });
     hideConnect();
 
     var when = hhmm(new Date());

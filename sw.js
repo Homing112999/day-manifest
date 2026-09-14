@@ -1,4 +1,4 @@
-const CACHE_NAME = "day-manifest-v4";
+const CACHE_NAME = "day-manifest-v5";
 const APP_SHELL = ["./", "index.html", "manifest.json", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
